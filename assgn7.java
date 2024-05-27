@@ -1,74 +1,63 @@
 //server echo
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 
 public class EchoServer {
-
     public static void main(String[] args) {
-        int port = 12345; // Server will listen on this port
-
+        int port = 12345;
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Echo Server is listening on port " + port);
+            System.out.println("Server is listening on port " + port);
 
             while (true) {
-                try (Socket socket = serverSocket.accept()) {
-                    System.out.println("New client connected");
+                Socket socket = serverSocket.accept();
+                System.out.println("New client connected");
 
-                    BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
+                try (DataInputStream input = new DataInputStream(socket.getInputStream());
+                     DataOutputStream output = new DataOutputStream(socket.getOutputStream())) {
 
-                    String message;
-                    while ((message = input.readLine()) != null) {
-                        System.out.println("Received: " + message);
-                        output.println("Echo: " + message);
-                    }
-                } catch (IOException e) {
-                    System.out.println("Error handling client connection: " + e.getMessage());
+                    String message = input.readUTF();
+                    System.out.println("Received: " + message);
+
+                    output.writeUTF(message);  // Echo the message back to the client
+                } catch (IOException ex) {
+                    System.out.println("Client disconnected");
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error starting server: " + e.getMessage());
+        } catch (IOException ex) {
+            System.out.println("Server exception: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 }
 
+
 //client echo
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 import java.util.Scanner;
 
 public class EchoClient {
-
     public static void main(String[] args) {
-        String hostname = "localhost"; // Server's hostname
-        int port = 12345; // Server's port
+        String hostname = "localhost";
+        int port = 12345;
 
-        try (Socket socket = new Socket(hostname, port)) {
-            PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            Scanner scanner = new Scanner(System.in);
+        try (Socket socket = new Socket(hostname, port);
+             DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+             DataInputStream input = new DataInputStream(socket.getInputStream());
+             Scanner scanner = new Scanner(System.in)) {
 
-            String userInput;
-            System.out.println("Enter messages to send to the server (type 'exit' to quit):");
-            while (true) {
-                System.out.print("> ");
-                userInput = scanner.nextLine();
-                if ("exit".equalsIgnoreCase(userInput)) {
-                    break;
-                }
-                output.println(userInput);
-                String serverResponse = input.readLine();
-                System.out.println(serverResponse);
-            }
-        } catch (IOException e) {
-            System.out.println("Error connecting to server: " + e.getMessage());
+            System.out.print("Enter message: ");
+            String message = scanner.nextLine();
+
+            output.writeUTF(message);  // Send message to the server
+
+            String echoMessage = input.readUTF();  // Read echo message from the server
+            System.out.println("Echo from server: " + echoMessage);
+
+        } catch (UnknownHostException ex) {
+            System.out.println("Server not found: " + ex.getMessage());
+        } catch (IOException ex) {
+            System.out.println("I/O error: " + ex.getMessage());
         }
     }
 }
