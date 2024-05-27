@@ -1,68 +1,64 @@
 //server upper
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 
-public class StringProcessingServer {
-
+public class UppercaseServer {
     public static void main(String[] args) {
-        int port = 12345; // Server will listen on this port
-
+        int port = 12345;
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server is listening on port " + port);
 
             while (true) {
-                try (Socket socket = serverSocket.accept()) {
-                    System.out.println("New client connected");
+                Socket socket = serverSocket.accept();
+                System.out.println("New client connected");
 
-                    BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
+                try (DataInputStream input = new DataInputStream(socket.getInputStream());
+                     DataOutputStream output = new DataOutputStream(socket.getOutputStream())) {
 
-                    String clientMessage = input.readLine();
-                    System.out.println("Received from client: " + clientMessage);
+                    String message = input.readUTF();
+                    System.out.println("Received: " + message);
 
-                    String response = clientMessage.toUpperCase();
-                    output.println(response);
-                } catch (IOException e) {
-                    System.out.println("Error handling client connection: " + e.getMessage());
+                    String uppercaseMessage = message.toUpperCase();
+                    output.writeUTF(uppercaseMessage);  // Send the uppercase message back to the client
+                } catch (IOException ex) {
+                    System.out.println("Client disconnected");
                 }
             }
-        } catch (IOException e) {
-            System.out.println("Error starting server: " + e.getMessage());
+        } catch (IOException ex) {
+            System.out.println("Server exception: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 }
 
+
 //client upper
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 import java.util.Scanner;
 
-public class StringProcessingClient {
-
+public class UppercaseClient {
     public static void main(String[] args) {
-        String hostname = "localhost"; // Server's hostname
-        int port = 12345; // Server's port
+        String hostname = "localhost";
+        int port = 12345;
 
-        try (Socket socket = new Socket(hostname, port)) {
-            PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            Scanner scanner = new Scanner(System.in);
+        try (Socket socket = new Socket(hostname, port);
+             DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+             DataInputStream input = new DataInputStream(socket.getInputStream());
+             Scanner scanner = new Scanner(System.in)) {
 
-            System.out.println("Enter a string to send to the server:");
-            String userInput = scanner.nextLine();
-            output.println(userInput);
+            System.out.print("Enter message: ");
+            String message = scanner.nextLine();
 
-            String serverResponse = input.readLine();
-            System.out.println("Server response: " + serverResponse);
-        } catch (IOException e) {
-            System.out.println("Error connecting to server: " + e.getMessage());
+            output.writeUTF(message);  // Send message to the server
+
+            String uppercaseMessage = input.readUTF();  // Read uppercase message from the server
+            System.out.println("Uppercase from server: " + uppercaseMessage);
+
+        } catch (UnknownHostException ex) {
+            System.out.println("Server not found: " + ex.getMessage());
+        } catch (IOException ex) {
+            System.out.println("I/O error: " + ex.getMessage());
         }
     }
 }
