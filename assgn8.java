@@ -1,36 +1,25 @@
 //server multicast group
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.Scanner;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 
-public class EchoClient {
-
+public class MulticastServer {
     public static void main(String[] args) {
-        String hostname = "localhost"; // Server's hostname
-        int port = 12345; // Server's port
+        String multicastAddress = "224.0.0.1";
+        int port = 12345;
 
-        try (Socket socket = new Socket(hostname, port)) {
-            PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            Scanner scanner = new Scanner(System.in);
+        try (MulticastSocket socket = new MulticastSocket()) {
+            InetAddress group = InetAddress.getByName(multicastAddress);
+            String message = "Hello, multicast clients!";
+            DatagramPacket packet = new DatagramPacket(message.getBytes(), message.length(), group, port);
 
-            String userInput;
-            System.out.println("Enter messages to send to the server (type 'exit' to quit):");
-            while (true) {
-                System.out.print("> ");
-                userInput = scanner.nextLine();
-                if ("exit".equalsIgnoreCase(userInput)) {
-                    break;
-                }
-                output.println(userInput);
-                String serverResponse = input.readLine();
-                System.out.println(serverResponse);
-            }
-        } catch (IOException e) {
-            System.out.println("Error connecting to server: " + e.getMessage());
+            socket.send(packet);
+            System.out.println("Message sent to multicast group");
+
+        } catch (IOException ex) {
+            System.out.println("Multicast server error: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 }
@@ -42,28 +31,27 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 
 public class MulticastClient {
-
     public static void main(String[] args) {
-        String multicastGroup = "230.0.0.1"; // Multicast group address
-        int port = 12345; // Multicast port
+        String multicastAddress = "224.0.0.1";
+        int port = 12345;
 
-        try (MulticastSocket multicastSocket = new MulticastSocket(port)) {
-            InetAddress group = InetAddress.getByName(multicastGroup);
+        try (MulticastSocket socket = new MulticastSocket(port)) {
+            InetAddress group = InetAddress.getByName(multicastAddress);
+            socket.joinGroup(group);
+            System.out.println("Joined multicast group");
 
-            // Join the multicast group
-            multicastSocket.joinGroup(group);
-
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[256];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-            // Receive the packet
-            multicastSocket.receive(packet);
+            socket.receive(packet);
+            String received = new String(packet.getData(), 0, packet.getLength());
+            System.out.println("Received message: " + received);
 
-            // Convert the packet data to a string
-            String message = new String(packet.getData(), 0, packet.getLength());
-            System.out.println("Received message from multicast group: " + message);
-        } catch (IOException e) {
-            System.out.println("Error receiving multicast message: " + e.getMessage());
+            socket.leaveGroup(group);
+
+        } catch (IOException ex) {
+            System.out.println("Multicast client error: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 }
