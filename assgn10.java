@@ -45,3 +45,39 @@ public class StopAndWaitProtocol {
         return random.nextBoolean(); // Simulate random success/failure
     }
 }
+
+
+//underpowerversion
+import java.util.Scanner;
+
+public class StopAndWaitSlidingWindow {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter the number of frames: ");
+        int numOfFrames = scanner.nextInt();
+        
+        System.out.print("Enter the window size: ");
+        int windowSize = scanner.nextInt();
+        
+        int[] frames = new int[numOfFrames];
+        
+        for (int i = 0; i < numOfFrames; i++) {
+            frames[i] = i + 1;
+        }
+        
+        System.out.println("\nStarting Stop-and-Wait Sliding Window Protocol...");
+        
+        int currentFrame = 0;
+        
+        while (currentFrame < numOfFrames) {
+            for (int i = 0; i < windowSize && currentFrame < numOfFrames; i++) {
+                System.out.println("Sending frame: " + frames[currentFrame]);
+                System.out.println("Acknowledgment received for frame: " + frames[currentFrame]);
+                currentFrame++;
+            }
+        }
+        
+        System.out.println("All frames have been sent and acknowledged.");
+        scanner.close();
+    }
+}
